@@ -4,7 +4,7 @@
 name:                front
 version:             0.0.0.1
 synopsis:            A reactive frontend web framework
--- description:
+description:         A reactive frontend web framework. See haskell-front.org for more details.
 homepage:            haskell-front.org
 license:             BSD3
 license-file:        LICENSE
@@ -16,6 +16,10 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md, README.md
 cabal-version:       >=1.10
 
+source-repository head
+  type: git
+  location: https://github.com/swamp-agr/front.git  
+                     
 library
   exposed-modules:     Text.Blaze.Front
                      , Text.Blaze.Front.Svg
