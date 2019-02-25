@@ -8,6 +8,8 @@ module Bridge where
 import Prelude
 
 import Data.Data
+import Data.Text (Text)
+
 
 -- | One specific and incomplete specifications of event-handlers geared
 -- towards their use with JS.
@@ -56,9 +58,79 @@ data EventHandler a
              deriving (Functor, Typeable, Data)
 #endif
 
+data IncomingCommand a = PingPong
+  | Send (Action a)
+  | AskEvents
+  deriving (Data, Typeable)
+
+data OutcomingCommand a = EmptyCmd
+  | ExecuteClient ClientId (ClientTask a) ExecuteStrategy
+  deriving (Data, Typeable)
+
+data ClientTask a = ClientTask
+  { executeRenderHtml :: [RenderHtml]
+  , executeAction :: [CallbackAction (Action a)]
+  } deriving (Data, Typeable)
+
+data RenderHtml = AttachText ElementId HtmlText
+  | AttachDOM ElementId HtmlText deriving (Data, Typeable)
+
 data CallbackAction a = CallbackAction (EventHandler a)
 #ifdef FAY
   deriving (Typeable, Data)
 #else
   deriving (Typeable, Data)
+
+instance Show a => Show (CallbackAction a) where
+  show = show
 #endif
+
+data Action a = Action ElementId ActionType a
+#ifdef FAY
+  deriving (Typeable, Data)
+#else
+  deriving (Show, Typeable, Data)
+#endif
+
+elementId :: Action a -> ElementId
+elementId (Action e _ _) = e
+
+actionType :: Action a -> ActionType
+actionType (Action _ a _) = a
+
+actionCmd :: Action a -> a
+actionCmd (Action _ _ c) = c
+
+updateAction :: Action a -> a -> Action a
+updateAction (Action e a _) c = Action e a c
+
+data ActionType = RecordAction | ObjectAction
+#ifdef FAY
+  deriving (Typeable, Data)
+#else
+  deriving (Show, Typeable, Data)
+#endif
+
+data ExecuteStrategy =
+  ExecuteAll | ExecuteExcept
+  deriving (Data, Typeable, Eq)
+
+type ElementId = Text
+
+type HtmlText = Text
+
+type ObjectId = Int
+
+type AttrId = Int
+
+type ClientId = Int
+
+type RowNumber = Int
+
+type RecordValue = Text
+
+-- | Pretty-printer for command expected from Client.
+ppIncomingCommand :: IncomingCommand a -> Text
+ppIncomingCommand AskEvents = "AskEvents"
+ppIncomingCommand (Send _) = "SendObjectAction"
+ppIncomingCommand PingPong = "PingPong"

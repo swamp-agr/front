@@ -2,3 +2,6 @@ dist-newstyle/*
 dist/*
 .stack-work/*
 .ghc*
+.cabal-sandbox/
+cabal.sandbox.config
+*.js
