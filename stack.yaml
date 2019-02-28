@@ -1,0 +1,7 @@
+resolver: lts-12.7
+packages:
+- '.'
+
+extra-deps:
+- fay-0.24.0.2
+- fay-websockets-0.0.1.1

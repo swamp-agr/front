@@ -58,18 +58,22 @@ data EventHandler a
              deriving (Functor, Typeable, Data)
 #endif
 
-data IncomingCommand a = PingPong
+data In a = PingPong
   | Send (Action a)
   | AskEvents
   deriving (Data, Typeable)
 
-data OutcomingCommand a = EmptyCmd
+data Out a = EmptyCmd
   | ExecuteClient ClientId (ClientTask a) ExecuteStrategy
   deriving (Data, Typeable)
 
+data ExecuteStrategy =
+  ExecuteAll | ExecuteExcept
+  deriving (Data, Typeable, Eq)
+
 data ClientTask a = ClientTask
   { executeRenderHtml :: [RenderHtml]
-  , executeAction :: [CallbackAction (Action a)]
+  , executeAction :: [CallbackAction a]
   } deriving (Data, Typeable)
 
 data RenderHtml = AttachText ElementId HtmlText
@@ -92,7 +96,7 @@ data Action a = Action ElementId ActionType a
   deriving (Show, Typeable, Data)
 #endif
 
-elementId :: Action a -> ElementId
+{-elementId :: Action a -> ElementId
 elementId (Action e _ _) = e
 
 actionType :: Action a -> ActionType
@@ -102,7 +106,7 @@ actionCmd :: Action a -> a
 actionCmd (Action _ _ c) = c
 
 updateAction :: Action a -> a -> Action a
-updateAction (Action e a _) c = Action e a c
+updateAction (Action e a _) c = Action e a c-}
 
 data ActionType = RecordAction | ObjectAction
 #ifdef FAY
@@ -110,10 +114,6 @@ data ActionType = RecordAction | ObjectAction
 #else
   deriving (Show, Typeable, Data)
 #endif
-
-data ExecuteStrategy =
-  ExecuteAll | ExecuteExcept
-  deriving (Data, Typeable, Eq)
 
 type ElementId = Text
 
@@ -130,7 +130,7 @@ type RowNumber = Int
 type RecordValue = Text
 
 -- | Pretty-printer for command expected from Client.
-ppIncomingCommand :: IncomingCommand a -> Text
+ppIncomingCommand :: In a -> Text
 ppIncomingCommand AskEvents = "AskEvents"
 ppIncomingCommand (Send _) = "SendObjectAction"
 ppIncomingCommand PingPong = "PingPong"

@@ -29,17 +29,20 @@ library
                      , Text.Blaze.Front.Html5.Attributes
                      , Text.Blaze.Front.Event
                      , Text.Blaze.Front.Renderer
+                     , Web.Front
                      -- shared
                      , Bridge
   -- other-modules:
   other-extensions:    FlexibleInstances, TypeSynonymInstances, OverloadedStrings, GeneralizedNewtypeDeriving, Rank2Types, ExistentialQuantification, DeriveDataTypeable, MultiParamTypeClasses, DeriveFunctor, FunctionalDependencies, ScopedTypeVariables
-  build-depends:       base >=4.11 && <4.12
+  build-depends:       base <4.12
                      , text >=1.2 && <1.3
+                     , mtl
                      , bytestring >=0.10 && <0.11
                      , blaze-markup >=0.8 && <0.10
                      , blaze-html >=0.9 && <0.10
                      , fay >= 0.24.0.2
                      , fay-dom
                      , fay-websockets
+                     , websockets
   hs-source-dirs:      src, shared
   default-language:    Haskell2010
