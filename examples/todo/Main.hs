@@ -45,6 +45,7 @@ import qualified Text.Blaze.Front.Html5.Attributes as A
 import qualified Text.Blaze.Front.Renderer as H
 
 import Bridge
+import Shared
 import Web.Front (createTask)
 
 -- * App
@@ -66,14 +67,6 @@ data Entry = Entry
   { description :: Text
   , eid :: Int
   }
-
--- * Actions
-
-data Msg = UpdateEntry Int Bool
-  | Add
-  | Complete Int
-  | Update Int RecordValue
-  deriving (Show, Typeable, Data)
 
 initModel :: Model
 initModel = Model { entries = [], nextId = 0 }
@@ -146,14 +139,14 @@ interact in' out' tvar = do
         Nothing -> error "No JSON provided"
         Just cmd -> do
           liftIO $ putStrLn $ show cmd
-          res <- onWSCommand cmd tvar
+          res <- onCommand cmd tvar
           atomically $ writeTChan in' res))
   where
     s2t = T.pack . show
 
 -- * Event Handling
 
-onWSCommand
+onCommand
   :: Value -> TVar Model -> WebSocketsT (HandlerFor App) (Out (Action Msg))
 onCommand cmd stateTVar = do
   m@Model{..} <- STM.readTVarIO stateTVar
@@ -173,7 +166,7 @@ onCommand cmd stateTVar = do
           atomically $ void $ swapTVar stateTVar newState
           cid <- lift clientSession
           return (ExecuteClient cid task ExecuteAll)
-        Update _eid val-> do
+        Update _eid val -> do
           let newState = Model ((upd _eid val) <$> entries) nextId
               upd _id val' e@Entry{..} =
                 if eid == _id then e { description = val', eid = _id } else e
@@ -198,7 +191,7 @@ renderModel Model{..} = do
     ! A.id "todo-add"
     ! A.type_ "submit"
     ! E.onClick (Action btnId ObjectAction Add)
-    $ "Добавить"
+    $ "Add"
 
 renderEntry :: Entry -> H.Markup (Action Msg)
 renderEntry Entry{..} = do
@@ -213,7 +206,7 @@ renderEntry Entry{..} = do
     ! A.id (toValue removeId)
     ! A.type_ "submit"
     ! E.onClick (Action removeId ObjectAction (Complete eid))
-    $ "Завершить"
+    $ "Done"
   H.br
 
 -- * Helpers 

@@ -26,10 +26,26 @@ For client (issue: faylang/fay#459):
 cabal sandbox init
 cabal install # fay executable and libraries will be loaded
 export HASKELL_PACKAGE_SANDBOX=`echo .cabal-sandbox/*-packages.conf.d/`
-cabal-sandbox/bin/fay --no-rts --no-stdlib \
-  --package fay-base,fay-dom,fay-websockets \
+.cabal-sandbox/bin/fay \
+  --package fay-dom,fay-websockets \
   --include shared,fay \
-  -o bundle.js fay/Client.hs  
+  -o bundle.js fay/Client.hs
+```
+
+## Examples
+
+- `TODO`
+
+```
+.cabal-sandbox/bin/fay \
+  --package fay-dom,fay-websockets \
+  --include shared,fay \
+  -o bundle.js \
+  shared/Bridge.hs fay/Client/FFI.hs fay/Client.hs examples/todo/Shared.hs
+mv bundle.js examples/todo/static/
+cd examples/todo
+chmod +x Main.hs
+./Main.hs
 ```
 
 ## Usage
