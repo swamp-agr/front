@@ -1,59 +1,77 @@
 #!/usr/bin/env stack
 {- stack --resolver lts-12.7 runghc
-  --package yesod-core
-  --package yesod-websockets
+  --package servant
+  --package servant-server
+  --package servant-blaze
+  --package servant-websockets
   --package text
   --package conduit
   --package time
   --package stm-lifted
   --package bytestring
-  Main
+  ServantTodo
 -}
-{-# LANGUAGE QuasiQuotes, TemplateHaskell, TypeFamilies, OverloadedStrings, NoImplicitPrelude, DeriveDataTypeable, RecordWildCards, ScopedTypeVariables #-}
-module Main where
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators #-}
+module ServantTodo where
 
 import Conduit
-import Control.Monad (forever, void, forM_)
-import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async
 import Control.Concurrent.STM.Lifted as STM
-import Data.Aeson (decode)
+import Control.Monad (forever, void, forM_)
+import Data.Aeson (decode, Value, toJSON)
 import Data.Aeson.Text
-import Data.Char (isDigit)
+import Data.ByteString (ByteString)
 import Data.Conduit
-import Data.Data
+import Data.Char (isDigit)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Text.Lazy.Builder (toLazyText)
-import Data.Time
+import Fay.Convert (readFromFay', showToFay)
+import Network.Wai.Handler.Warp
+import Network.WebSockets hiding (Headers)
+import Prelude hiding (interact)
+import Servant
+import Servant.API.WebSocket
+import Servant.HTML.Blaze
+import Servant.Server.StaticFiles
+import System.Random (randomRIO)
 import Text.Blaze.Front.Html5 ((!), toValue)
 import Text.Blaze.Front.Renderer (renderNewMarkup)
-import Fay.Convert (readFromFay', showToFay)
-import Prelude hiding (interact)
-import System.Random (randomRIO)
-import Yesod.Core
-import Yesod.Static
-import Yesod.WebSockets
+import Text.Blaze.Html5 (Html)
 
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Conduit.List
 import qualified Data.List as L
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
 import qualified Text.Blaze.Front.Event as E
 import qualified Text.Blaze.Front.Html5 as H
 import qualified Text.Blaze.Front.Html5.Attributes as A
-import qualified Text.Blaze.Front.Renderer as H
 
 import Bridge
 import Shared
 import Web.Front (createTask)
 
+type ServerAPI = Get '[HTML] (Headers '[Header "set-cookie" ByteString] Html)
+  :<|> "static" :> Raw
+type WebSocketAPI = WebSocket
+type API = WebSocketAPI :<|> ServerAPI
+
 -- * App
 
-data App = App
-  { appModel :: TVar Model
-  , appChannel :: TChan (Out (Action Msg))
-  , appStatic :: Static
+data Config = Config
+  { model :: TVar Model
+  , channel :: TChan (Out (Action Msg))
+  , static :: FilePath
+  , clients :: TVar [Int]
   }
 
 -- * Model
@@ -68,72 +86,59 @@ data Entry = Entry
   , eid :: Int
   }
 
+-- * API 
+
 initModel :: Model
 initModel = Model { entries = [], nextId = 0 }
 
-mkYesod "App" [parseRoutes|
-/ HomeR GET
-/static      StaticR  Static  appStatic
-|]
+api :: Proxy API
+api = Proxy
 
--- * API  
-
-instance Yesod App where
-  defaultLayout widget = do
-    pc <- widgetToPageContent [whamlet|^{widget}|]
-    withUrlRenderer [hamlet|<html>
-  <head>
-    ^{pageHead pc}
-    <script src="/static/bundle.js">
-  <body>
-    <div #root>^{pageBody pc}
-|]
+server :: Config -> Server API
+server cfg = serveSockets cfg :<|> (serveRoot cfg :<|> serveStatic cfg)
 
 -- * Handler for /
 
-getHomeR :: Handler Html
-getHomeR = do
-  modelTVar <- appModel <$> getYesod
-  model <- STM.readTVarIO modelTVar
-  webSockets $ webApp modelTVar
-  defaultLayout $ do
-    setTitle "TODO"
-    toWidget $ renderNewMarkup $ renderModel model
+serveRoot :: Config -> Handler Html
+serveRoot Config{..} = do
+  state <- liftIO $ readTVarIO model
+  return $ renderNewMarkup $ do
+    H.html $ do
+      H.head $ do
+        H.title "TODO"
+        H.script ! A.src "/static/bundle.js" $ ""
+      H.body $ do
+        H.div ! A.id "root" $ renderModel state
 
--- * WebSockets Web application
+-- serveStatic :: Config -> Handler Raw
+serveStatic Config{..} = serveDirectoryWebApp static
 
-webApp tvar = do
-  writeChan' <- appChannel <$> getYesod
-  readChan' <- atomically $ do
-    dupTChan writeChan'
-  interact writeChan' readChan' tvar
+serveSockets Config{..} = \stream -> do
+  let writeChan' = channel
+  readChan' <- atomically $ dupTChan writeChan'
+  interact stream writeChan' readChan' model
 
-interact
-    :: TChan (Out (Action Msg))
-    -> TChan (Out (Action Msg))
-    -> TVar Model
-    -> WebSocketsT Handler ()
-interact in' out' tvar = do
+interact stream in' out' tvar = do
   race_
     (forever $ do
         cmd <- atomically $ readTChan out'
-        json <- returnJson . showToFay $ cmd
+        json <- pure $ toJSON . showToFay $ cmd
         res <- lift $ lookupSession "client"
         case cmd of
-          EmptyCmd -> sendTextData . toLazyText . encodeToTextBuilder $ json
+          EmptyCmd -> sendTextData stream . toLazyText . encodeToTextBuilder $ json
           ExecuteClient cid task strategy -> do
             case res of
-              Nothing -> sendTextData . toLazyText . encodeToTextBuilder $ json
+              Nothing -> sendTextData stream . toLazyText . encodeToTextBuilder $ json
               Just sid -> do
                 if sid == s2t cid && strategy == ExecuteExcept
                   then do
-                    json2 <- returnJson $ showToFay $
+                    json2 <- pure $ toJSON $ showToFay $
                       ExecuteClient cid task ExecuteExcept
-                    sendTextData . toLazyText . encodeToTextBuilder $ json2
+                    sendTextData stream . toLazyText . encodeToTextBuilder $ json2
                   else do
-                    json2 <- returnJson $ showToFay $
+                    json2 <- pure $ toJSON $ showToFay $
                       ExecuteClient cid task ExecuteAll
-                    sendTextData . toLazyText . encodeToTextBuilder $ json2)
+                    sendTextData stream . toLazyText . encodeToTextBuilder $ json2)
 
     (sourceWS $$ mapM_C (\cmdstr -> do
       case (decode $ BL.fromChunks [encodeUtf8 cmdstr] :: Maybe Value) of
@@ -144,11 +149,11 @@ interact in' out' tvar = do
           atomically $ writeTChan in' res))
   where
     s2t = T.pack . show
+    sourceWS = forever $ lift receiveData >>= yield
+
 
 -- * Event Handling
 
-onCommand
-  :: Value -> TVar Model -> WebSocketsT (HandlerFor App) (Out (Action Msg))
 onCommand cmd stateTVar = do
   m@Model{..} <- STM.readTVarIO stateTVar
   case readFromFay' cmd of
@@ -212,8 +217,8 @@ renderEntry Entry{..} = do
 
 -- * Helpers 
 
-clientSession :: MonadHandler m => m Int
-clientSession = do
+clientSession :: Monad m => Config -> m Int
+clientSession Config{..} = do
   res <- lookupSession "client"
   case res of
     Nothing -> do
@@ -236,13 +241,13 @@ safeFromJust :: forall t. t -> Maybe t -> t
 safeFromJust defv Nothing = defv
 safeFromJust _ (Just a) = a
 
-
 -- * Main
 
-main :: IO ()
 main = do
-  (App
+  cfg <- Config
     <$> STM.newTVarIO initModel
     <*> atomically newBroadcastTChan
-    <*> staticDevel "./static")
-  >>= warp 3000
+    <*> pure "./static"
+    <*> newTVarIO []
+  putStrLn "Server up and running on http://localhost:3000/"
+  run 3000 $ serve api (server cfg)
