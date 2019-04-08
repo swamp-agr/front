@@ -1,14 +1,14 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE CPP                #-}
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveFunctor      #-}
+{-# LANGUAGE NoImplicitPrelude  #-}
+{-# LANGUAGE OverloadedStrings  #-}
 module Bridge where
 
-import Prelude
+import           Prelude
 
-import Data.Data
-import Data.Text (Text)
+import           Data.Data
+import           Data.Text (Text)
 
 
 -- | One specific and incomplete specifications of event-handlers geared
@@ -73,7 +73,7 @@ data ExecuteStrategy =
 
 data ClientTask a = ClientTask
   { executeRenderHtml :: [RenderHtml]
-  , executeAction :: [CallbackAction a]
+  , executeAction     :: [CallbackAction a]
   } deriving (Data, Typeable)
 
 data RenderHtml = AttachText ElementId HtmlText
@@ -132,5 +132,5 @@ type RecordValue = Text
 -- | Pretty-printer for command expected from Client.
 ppIncomingCommand :: In a -> Text
 ppIncomingCommand AskEvents = "AskEvents"
-ppIncomingCommand (Send _) = "SendObjectAction"
-ppIncomingCommand PingPong = "PingPong"
+ppIncomingCommand (Send _)  = "SendObjectAction"
+ppIncomingCommand PingPong  = "PingPong"
