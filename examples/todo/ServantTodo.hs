@@ -12,31 +12,19 @@ module ServantTodo where
 
 import           Conduit
 import           Control.Concurrent                      (threadDelay)
-import           Control.Concurrent.Async
-import           Control.Concurrent.STM.Lifted           as STM
-import           Control.Monad                           (forM_, forever,
-                                                          unless, void, when)
+import           Control.Monad                           (unless, when)
 import           Control.Monad.Catch                     (catch)
 import           Crypto.Random                           (drgNew)
-import           Data.Aeson                              (Value, decode, toJSON)
-import           Data.Aeson.Text
-import           Data.ByteString                         (ByteString)
-import           Data.Char                               (isDigit)
-import           Data.Coerce                             (coerce)
-import           Data.Conduit
+import           Data.Data
 import           Data.Default                            (def)
 import qualified Data.HashMap.Strict                     as HashMap
 
 import           Data.Text                               (Text)
-import           Data.Text.Encoding                      (decodeUtf8,
-                                                          encodeUtf8)
-import           Data.Text.Lazy.Builder                  (toLazyText)
+import           Data.Text.Encoding                      (decodeUtf8)
 import           Data.Time                               (defaultTimeLocale,
                                                           formatTime)
 import           Data.Time.Clock                         (UTCTime (..),
                                                           getCurrentTime)
-import           Fay.Convert                             (readFromFay',
-                                                          showToFay)
 import           Network.Wai                             (Application)
 import           Network.Wai.Handler.Warp
 import           Network.Wai.Handler.WebSockets
@@ -46,7 +34,6 @@ import           Servant
 import           Servant.HTML.Blaze
 import           Servant.Server.Experimental.Auth        (mkAuthHandler)
 import           Servant.Server.Experimental.Auth.Cookie
-import           Servant.Server.StaticFiles
 import           System.Directory                        (createDirectoryIfMissing,
                                                           doesFileExist,
                                                           getModificationTime,
@@ -54,23 +41,23 @@ import           System.Directory                        (createDirectoryIfMissi
                                                           removeFile)
 import           System.FilePath.Posix                   ((<.>), (</>))
 import           System.Random                           (randomRIO)
-import           Text.Blaze.Front.Html5                  (toValue, (!))
+import           Text.Blaze.Front.Html5                  ((!))
 import           Text.Blaze.Front.Renderer               (renderNewMarkup)
 import           Text.Blaze.Html5                        (Html)
 
+import           Control.Concurrent.STM.Lifted           as STM
 import qualified Data.ByteString.Base64                  as Base64
 import qualified Data.ByteString.Char8                   as BSC8
 import qualified Data.ByteString.Lazy                    as BL
-import qualified Data.Conduit.List
 import qualified Data.List                               as L
 import qualified Data.Text                               as T
-import qualified Text.Blaze.Front.Event                  as E
 import qualified Text.Blaze.Front.Html5                  as H
 import qualified Text.Blaze.Front.Html5.Attributes       as A
 
 import           Bridge
 import           Shared
-import           Web.Front                               (createTask)
+import           Todo
+import           Web.Front.Broadcast
 
 type API = Header "cookie" T.Text :> Get '[HTML] (Cookied Html)
   :<|> "static" :> Raw
@@ -89,33 +76,18 @@ data Config = Config
   , serverKeySet       :: FileKeySet
   }
 
--- * Model
-
-data Model = Model
-  { entries :: [Entry]
-  , nextId  :: Int
-  }
-
-data Entry = Entry
-  { description :: Text
-  , eid         :: Int
-  }
-
 -- * API
-
-initModel :: Model
-initModel = Model { entries = [], nextId = 0 }
 
 api :: Proxy API
 api = Proxy
 
 server :: Config -> Server API
-server cfg@Config{..} = serveRoot cfg :<|> serveStatic cfg
+server cfg = serveRoot cfg :<|> serveStatic cfg
   where
     addSession' = addSession
-      authCookieSettings -- the settings
-      randomSource       -- random source
-      serverKeySet       -- server key set
+      (authCookieSettings cfg) -- the settings
+      (randomSource cfg)       -- random source
+      (serverKeySet cfg)       -- server key set
 
     serveRoot cfg'@Config{..} _mclient = do
       (clientId, state) <- liftIO $ do
@@ -139,101 +111,10 @@ server cfg@Config{..} = serveRoot cfg :<|> serveStatic cfg
 addClient :: IO Int
 addClient = randomRIO (0, 1000000)
 
-interact cfg stream in' out' tvar = \client -> do
-  race_
-    (writeLoop stream out' client)
-    (readLoop cfg stream in' tvar client)
-
-  where
-    writeLoop _stream _out _client = forever $ liftIO $ do
-      cmd <- atomically $ readTChan _out
-      json <- pure $ toJSON . showToFay $ cmd
-      case cmd of
-        EmptyCmd ->
-          sendTextData _stream (toLazyText $ encodeToTextBuilder json)
-        ExecuteClient cid task strategy -> do
-          let sid = _client
-          if sid == cid && strategy == ExecuteExcept
-            then do
-              json2 <- pure $ toJSON $ showToFay $
-                ExecuteClient cid task ExecuteExcept
-              sendTextData _stream (toLazyText $ encodeToTextBuilder json2)
-            else do
-              json2 <- pure $ toJSON $ showToFay $
-                ExecuteClient cid task ExecuteAll
-              sendTextData _stream (toLazyText $ encodeToTextBuilder json2)
-
-    readLoop _cfg _stream _in _tvar _client = forever $ liftIO $ do
-      data' <- receiveData _stream
-      runConduit $ yield data' .| mapM_C (\cmdstr -> do
-        case (decode $ BL.fromChunks [encodeUtf8 cmdstr] :: Maybe Value) of
-          Nothing -> error "No JSON provided"
-          Just cmd -> do
-            liftIO $ putStrLn $ show cmd
-            res <- onCommand cmd _tvar _cfg _client
-            atomically $ writeTChan _in res)
-
--- * Event Handling
-
-onCommand cmd stateTVar = \cfg client -> do
-  m@Model{..} <- STM.readTVarIO stateTVar
-  case readFromFay' cmd of
-    Right (Send (Action _ _ acmd)) -> do
-      case acmd of
-        Add -> do
-          let newTodo = Entry "TODO: " nextId
-              newState = Model (newTodo : entries) (succ nextId)
-              task = createTask "root" renderModel newState
-          atomically $ void $ swapTVar stateTVar newState
-          return (ExecuteClient client task ExecuteAll)
-        Complete _eid -> do
-          let newState = Model (filter ((/=_eid) . eid) entries) nextId
-              task = createTask "root" renderModel newState
-          atomically $ void $ swapTVar stateTVar newState
-          return (ExecuteClient client task ExecuteAll)
-        Update _eid val -> do
-          let newState = Model ((upd _eid val) <$> entries) nextId
-              upd _id val' e@Entry{..} =
-                if eid == _id then e { description = val', eid = _id } else e
-              task = createTask "root" renderModel newState
-          atomically $ void $ swapTVar stateTVar newState
-          return (ExecuteClient client task ExecuteExcept)
-    Right AskEvents -> do
-      let task = createTask "root" renderModel m
-      return $ ExecuteClient client task ExecuteAll
-
--- * Rendering
-
-renderModel :: Model -> H.Markup (Action Msg)
-renderModel Model{..} = do
-  H.h1 $ "TODO MVC: Servant"
-  H.br
-  forM_ entries $ \entry -> renderEntry entry
-  let btnId = "todo-add"
-  H.button
-    ! A.id "todo-add"
-    ! A.type_ "submit"
-    ! E.onClick (Action btnId ObjectAction Add)
-    $ "Add"
-
-renderEntry :: Entry -> H.Markup (Action Msg)
-renderEntry Entry{..} = do
-  let elemId = "todo-" <> (T.pack $ show eid)
-      removeId = "remove-" <> (T.pack $ show eid)
-  H.input
-    ! A.id (toValue elemId)
-    ! A.type_ "text"
-    ! A.value (toValue description)
-    ! E.onKeyUp (Action elemId RecordAction (Update eid ""))
-  H.button
-    ! A.id (toValue removeId)
-    ! A.type_ "submit"
-    ! E.onClick (Action removeId ObjectAction (Complete eid))
-    $ "Done"
-  H.br
 
 -- * Helpers
 
+checkSession :: Config -> PendingConnection -> IO Int
 checkSession cfg =
   clientSession cfg . fmap decodeUtf8 . HashMap.lookup "cookie"
   . HashMap.fromList . requestHeaders . pendingRequest
@@ -254,31 +135,21 @@ lookupSession Config{..} = \client -> do
     Just c   -> do
       msession <- getHeaderSession authCookieSettings serverKeySet c `catch` ex
       case epwSession <$> msession of
-        Nothing     -> pure Nothing
-        Just client -> pure $ pure client
+        Nothing -> pure Nothing
+        Just cl -> pure $ pure cl
   where
     ex :: AuthCookieExceptionHandler IO
     ex _e = pure Nothing
 
+setSession :: MonadIO m => Config -> Int -> m ()
 setSession Config{..} clientId = atomically $ do
   ids <- readTVar clients
   unless (clientId `elem` ids) $ modifyTVar' clients (clientId :)
 
-parseInt :: Text -> Int
-parseInt = toInt . ignoreChars
-
-toInt :: String -> Int
-toInt a = read a :: Int
-
-ignoreChars :: Text -> String
-ignoreChars = L.filter isDigit . T.unpack
-
-safeFromJust :: forall t. t -> Maybe t -> t
-safeFromJust defv Nothing = defv
-safeFromJust _ (Just a)   = a
 
 -- * Main
 
+main :: IO ()
 main = do
   let fksp = FileKSParams
         { fkspKeySize = 16
@@ -319,7 +190,7 @@ app cfg@Config{..} = websocketsOr defaultConnectionOptions wsApp mainApp
       stream <- acceptRequest pendingConn
       forkPingThread stream 60 -- Ping
       readChan' <- atomically $ dupTChan writeChan'
-      interact cfg stream writeChan' readChan' model (_client)
+      interact stream writeChan' readChan' model (_client)
     mainApp = serveWithContext
       (Proxy :: Proxy API)
       ((authHandler authCookieSettings serverKeySet) :. EmptyContext)

@@ -1,32 +1,21 @@
 
 module Web.Front where
 
-import Control.Monad.Reader
-import Data.Text (Text)
-import Network.WebSockets
+import           Data.Text                 (Text)
 
-import Bridge
-import Text.Blaze.Front
-import Text.Blaze.Front.Renderer
+import           Bridge
+import           Text.Blaze.Front
+import           Text.Blaze.Front.Renderer
 
-import qualified Data.Text as T
+import qualified Data.Text                 as T
 
-type WebSocketsT = ReaderT Connection
-  
-data Front m cache state action channel value handler any = Front
-  { initState :: handler (cache state)
-  , action :: action
-  , interact :: channel Out -> channel Out -> cache state -> WebSocketsT handler ()
-  , onReceive :: value -> cache state -> WebSocketsT (m any) (Out action)
-  , render :: state -> Markup action
-  } 
-
+-- | Generate message that will be pushed to client(s) based on underlying communication.
 createTask
   :: Show a
-  => Text
-  -> (t -> Markup a)
-  -> t
-  -> ClientTask a
+  => Text -- ^ DOM Element Id.
+  -> (t -> Markup a) -- ^ How to render state.
+  -> t -- ^ State to render.
+  -> ClientTask a -- ^ Message that will be pushed to client(s).
 createTask eid renderer state = task
   where rhtml = AttachText eid (T.pack . renderHtml $ markup)
         markup = renderer state
@@ -34,3 +23,6 @@ createTask eid renderer state = task
           { executeRenderHtml = [rhtml]
           , executeAction = registerEvents markup []
           }
+
+emptyTask :: ClientTask a
+emptyTask = ClientTask { executeRenderHtml = [], executeAction = [] }
