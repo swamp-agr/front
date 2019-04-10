@@ -1,7 +1,9 @@
 dist-newstyle/*
 dist/*
-.stack-work/*
+.stack-work
 .ghc*
 .cabal-sandbox/
 cabal.sandbox.config
 *.js
+test-key-set
+client_session_key.aes
