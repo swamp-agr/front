@@ -12,12 +12,52 @@ The goal is to have a tiny websockets-based bridge between client and server to 
 - Virtual DOM with full/partial rendering.
 - "blaze-html" like extended markup tree for handling both DOM and JS events.
 
-## Installation
+## Usage
+
+1. Add `front` as a dependency to your project using preferred build tool.
+2. Obtain `bundle.js` by
+
+```
+curl https://github.com/swamp-agr/front/blob/decouple-from-examples/examples/todo/static/bundle.js
+```
+
+and include it as static resource in your application server. 
+
+3. Import `Shared` module.
+4. Choose proper communication model (Only session, Broadcast, etc.).
+5. That's it.
+
+## Examples
+
+- `TODO`
+
+  - Installation with Stack (`servant-auth-cookie` should be fixed to allow build with `cabal`):
+  ```
+  stack install --flag="front:examples"
+  ```
+  - usage:
+  ```
+  cd examples/todo
+  # for servant-based:
+  todo-servant-example
+  # for yesod-based:
+  todo-yesod-example
+  # open web browser:
+  open http://localhost:3000
+  ```
+
+## Developer Installation (Contribution)
 
 For server:
 
 ```
 cabal new-build
+```
+
+or
+
+```
+stack build
 ```
 
 For client (issue: faylang/fay#459):
@@ -32,25 +72,7 @@ export HASKELL_PACKAGE_SANDBOX=`echo .cabal-sandbox/*-packages.conf.d/`
   -o bundle.js fay/Client.hs
 ```
 
-## Examples
-
-- `TODO`
-
-```
-.cabal-sandbox/bin/fay \
-  --package fay-dom,fay-websockets \
-  --include shared,fay \
-  -o bundle.js \
-  shared/Bridge.hs fay/Client/FFI.hs fay/Client.hs examples/todo/Shared.hs
-mv bundle.js examples/todo/static/
-cd examples/todo
-chmod +x Main.hs
-./Main.hs
-```
-
-## Usage
-
-Coming soon...
+Please do not hesitate to open Issue to discuss your questions or use cases.
 
 ## Acknowledgement
 

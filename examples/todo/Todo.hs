@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RankNTypes            #-}
@@ -9,6 +10,7 @@ import           Bridge
 import           Control.Concurrent.STM.Lifted     as STM
 import           Control.Monad                     (forM_, void)
 import           Data.Char                         (isDigit)
+import           Data.Data
 import qualified Data.List                         as L
 import           Data.Text                         (Text)
 import qualified Data.Text                         as T
@@ -20,7 +22,6 @@ import qualified Text.Blaze.Front.Html5.Attributes as A
 --import           Text.Blaze.Html5                  (Html)
 
 
-import           Shared
 import           Web.Front
 import           Web.Front.Broadcast
 
@@ -35,6 +36,11 @@ data Entry = Entry
   { description :: Text
   , eid         :: Int
   }
+
+data Msg = Add
+  | Complete Int
+  | Update Int RecordValue
+  deriving (Show, Typeable, Data)
 
 initModel :: Model
 initModel = Model { entries = [], nextId = 0 }
