@@ -31,13 +31,9 @@ and include it as static resource in your application server.
 
 - `TODO`
 
-  - Installation with Cabal:  
+  - Installation with Stack (`servant-auth-cookie` should be fixed to allow build with `cabal`):
   ```
-  cabal new-build --flag="examples" --allow-newer
-  ```
-  - Installation with Stack:
-  ```
-  stack install --flags="front:examples"
+  stack install --flag="front:examples"
   ```
   - usage:
   ```
@@ -76,7 +72,7 @@ export HASKELL_PACKAGE_SANDBOX=`echo .cabal-sandbox/*-packages.conf.d/`
   -o bundle.js fay/Client.hs
 ```
 
-Please do not hesitate to open Issue to discuss your use cases.
+Please do not hesitate to open Issue to discuss your questions or use cases.
 
 ## Acknowledgement
 
