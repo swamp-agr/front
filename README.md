@@ -15,7 +15,13 @@ The goal is to have a tiny websockets-based bridge between client and server to 
 ## Usage
 
 1. Add `front` as a dependency to your project using preferred build tool.
-2. Obtain `bundle.js` by `TBD` and include it as static resource for your application server. 
+2. Obtain `bundle.js` by
+
+```
+curl https://github.com/swamp-agr/front/blob/decouple-from-examples/examples/todo/static/bundle.js
+```
+
+and include it as static resource in your application server. 
 3. Import `Shared` module.
 4. Choose proper communication model (Only session, Broadcast, etc.).
 5. That's it.
@@ -26,6 +32,12 @@ For server:
 
 ```
 cabal new-build
+```
+
+or
+
+```
+stack build
 ```
 
 For client (issue: faylang/fay#459):
@@ -44,16 +56,25 @@ export HASKELL_PACKAGE_SANDBOX=`echo .cabal-sandbox/*-packages.conf.d/`
 
 - `TODO`
 
-  - Cabal:  
-```
-cabal new-build --flag="examples" --allow-newer
-```
-
-  - Stack:
-```
-stack install --flags="front:examples"
-```
-
+  - Installation with Cabal:  
+  ```
+  cabal new-build --flag="examples" --allow-newer
+  ```
+  - Installation with Stack:
+  ```
+  stack install --flags="front:examples"
+  ```
+  - usage:
+  ```
+  cd examples/todo
+  # for servant-based:
+  todo-servant-example
+  # for yesod-based:
+  todo-yesod-example
+  # open web browser:
+  open http://localhost:3000
+  ```
+  
 ## Acknowledgement
 
 This ongoing framework would not have happened without these people and technologies:
