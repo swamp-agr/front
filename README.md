@@ -18,7 +18,7 @@ The goal is to have a tiny websockets-based bridge between client and server to 
 2. Obtain `bundle.js` by
 
 ```
-curl https://github.com/swamp-agr/front/blob/decouple-from-examples/examples/todo/static/bundle.js
+curl https://raw.githubusercontent.com/swamp-agr/front/master/examples/todo/static/bundle.js
 ```
 
 and include it as static resource in your application server. 
