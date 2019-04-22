@@ -24,7 +24,6 @@ import           Yesod.WebSockets
 import qualified Data.Text                     as T
 
 import           Bridge
-import           Shared
 import           Todo
 import           Web.Front.Broadcast
 

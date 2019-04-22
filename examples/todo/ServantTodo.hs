@@ -55,7 +55,6 @@ import qualified Text.Blaze.Front.Html5                  as H
 import qualified Text.Blaze.Front.Html5.Attributes       as A
 
 import           Bridge
-import           Shared
 import           Todo
 import           Web.Front.Broadcast
 

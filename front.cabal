@@ -35,7 +35,7 @@ library
                      , Bridge
   -- other-modules:
   other-extensions:    FlexibleInstances, TypeSynonymInstances, OverloadedStrings, GeneralizedNewtypeDeriving, Rank2Types, ExistentialQuantification, DeriveDataTypeable, MultiParamTypeClasses, DeriveFunctor, FunctionalDependencies, ScopedTypeVariables
-  build-depends:       base <4.12
+  build-depends:       base <5
                      , aeson
                      , async
                      , stm
@@ -58,7 +58,7 @@ executable todo-servant-example
   main-is:             ServantTodo.hs
   hs-source-dirs:      examples/todo
 
-  build-depends: base           >= 4.7 && <4.12
+  build-depends: base <5
                , aeson
                , conduit
                , async
@@ -93,14 +93,14 @@ executable todo-servant-example
                , wai            >= 3.0 
                , warp           >= 3.0
                , front
-  other-modules: Shared, Todo
+  other-modules: Todo
   ghc-options:    -main-is ServantTodo -Wall
   default-language: Haskell2010
 
 executable todo-yesod-example
   main-is:             YesodTodo.hs
   hs-source-dirs:      examples/todo
-  build-depends: base           >= 4.7 && <4.12
+  build-depends: base
                , front
                , text
                , mtl
@@ -114,6 +114,6 @@ executable todo-yesod-example
                , stm-lifted
                , bytestring
 
-  other-modules: Shared, Todo
+  other-modules: Todo
   ghc-options:    -main-is YesodTodo -Wall
   default-language: Haskell2010
