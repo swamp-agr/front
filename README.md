@@ -12,6 +12,14 @@ The goal is to have a tiny websockets-based bridge between client and server to 
 - Virtual DOM with full/partial rendering.
 - "blaze-html" like extended markup tree for handling both DOM and JS events.
 
+## Usage
+
+1. Add `front` as a dependency to your project using preferred build tool.
+2. Obtain `bundle.js` by `TBD` and include it as static resource for your application server. 
+3. Import `Shared` module.
+4. Choose proper communication model (Only session, Broadcast, etc.).
+5. That's it.
+
 ## Installation
 
 For server:
@@ -36,21 +44,15 @@ export HASKELL_PACKAGE_SANDBOX=`echo .cabal-sandbox/*-packages.conf.d/`
 
 - `TODO`
 
+  - Cabal:  
 ```
-.cabal-sandbox/bin/fay \
-  --package fay-dom,fay-websockets \
-  --include shared,fay \
-  -o bundle.js \
-  shared/Bridge.hs fay/Client/FFI.hs fay/Client.hs examples/todo/Shared.hs
-mv bundle.js examples/todo/static/
-cd examples/todo
-chmod +x Main.hs
-./Main.hs
+cabal new-build --flag="examples" --allow-newer
 ```
 
-## Usage
-
-Coming soon...
+  - Stack:
+```
+stack install --flags="front:examples"
+```
 
 ## Acknowledgement
 
