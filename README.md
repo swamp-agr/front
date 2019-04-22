@@ -22,11 +22,35 @@ curl https://github.com/swamp-agr/front/blob/decouple-from-examples/examples/tod
 ```
 
 and include it as static resource in your application server. 
+
 3. Import `Shared` module.
 4. Choose proper communication model (Only session, Broadcast, etc.).
 5. That's it.
 
-## Installation
+## Examples
+
+- `TODO`
+
+  - Installation with Cabal:  
+  ```
+  cabal new-build --flag="examples" --allow-newer
+  ```
+  - Installation with Stack:
+  ```
+  stack install --flags="front:examples"
+  ```
+  - usage:
+  ```
+  cd examples/todo
+  # for servant-based:
+  todo-servant-example
+  # for yesod-based:
+  todo-yesod-example
+  # open web browser:
+  open http://localhost:3000
+  ```
+
+## Developer Installation (Contribution)
 
 For server:
 
@@ -52,29 +76,8 @@ export HASKELL_PACKAGE_SANDBOX=`echo .cabal-sandbox/*-packages.conf.d/`
   -o bundle.js fay/Client.hs
 ```
 
-## Examples
+Please do not hesitate to open Issue to discuss your use cases.
 
-- `TODO`
-
-  - Installation with Cabal:  
-  ```
-  cabal new-build --flag="examples" --allow-newer
-  ```
-  - Installation with Stack:
-  ```
-  stack install --flags="front:examples"
-  ```
-  - usage:
-  ```
-  cd examples/todo
-  # for servant-based:
-  todo-servant-example
-  # for yesod-based:
-  todo-yesod-example
-  # open web browser:
-  open http://localhost:3000
-  ```
-  
 ## Acknowledgement
 
 This ongoing framework would not have happened without these people and technologies:
