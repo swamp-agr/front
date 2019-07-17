@@ -4,16 +4,16 @@ module Web.Front.Broadcast where
 import           Bridge
 import           Conduit
 import           Control.Concurrent.Async
-import           Control.Concurrent.STM.Lifted as STM
-import           Control.Monad                 (forever)
-import           Data.Aeson                    (Value, decode, toJSON)
+import           Control.Concurrent.STM   as STM
+import           Control.Monad            (forever)
+import           Data.Aeson               (Value, decode, toJSON)
 import           Data.Aeson.Text
-import qualified Data.ByteString.Lazy          as BL
+import qualified Data.ByteString.Lazy     as BL
 import           Data.Data
-import           Data.Text.Encoding            (encodeUtf8)
-import           Data.Text.Lazy.Builder        (toLazyText)
-import           Fay.Convert                   (showToFay)
-import           Network.WebSockets            hiding (Headers)
+import           Data.Text.Encoding       (encodeUtf8)
+import           Data.Text.Lazy.Builder   (toLazyText)
+import           Fay.Convert              (showToFay)
+import           Network.WebSockets       hiding (Headers)
 
 -- | The common way how to use websocket 'Connection' obtained from 'Handler' via 'Conduit'.
 -- 'interact' starts two concurrent processes.

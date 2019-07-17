@@ -24,6 +24,9 @@ onClick = ffi "%1.onclick=%2"
 onKeyUp :: Element -> Fay () -> Fay ()
 onKeyUp = ffi "%1.onkeyup=%2"
 
+onKeyDown :: Element -> Fay () -> Fay ()
+onKeyDown = ffi "%1.onkeydown=%2"
+
 onChange :: Element -> Fay () -> Fay ()
 onChange = ffi "%1.onchange=%2"
 

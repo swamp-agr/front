@@ -45,7 +45,7 @@ import           Text.Blaze.Front.Html5                  ((!))
 import           Text.Blaze.Front.Renderer               (renderNewMarkup)
 import           Text.Blaze.Html5                        (Html)
 
-import           Control.Concurrent.STM.Lifted           as STM
+import           Control.Concurrent.STM                  as STM
 import qualified Data.ByteString.Base64                  as Base64
 import qualified Data.ByteString.Char8                   as BSC8
 import qualified Data.ByteString.Lazy                    as BL
@@ -55,6 +55,7 @@ import qualified Text.Blaze.Front.Html5                  as H
 import qualified Text.Blaze.Front.Html5.Attributes       as A
 
 import           Bridge
+import           Shared
 import           Todo
 import           Web.Front.Broadcast
 
@@ -102,6 +103,7 @@ server cfg = serveRoot cfg :<|> serveStatic cfg
           H.head $ do
             H.title "TODO"
             H.script ! A.src "/static/bundle.js" $ ""
+            H.link ! A.rel "stylesheet" ! A.href "/static/todo.css"
           H.body $ do
             H.div ! A.id "root" $ renderModel state)
 
@@ -140,7 +142,7 @@ lookupSession Config{..} = \client -> do
     ex :: AuthCookieExceptionHandler IO
     ex _e = pure Nothing
 
-setSession :: MonadIO m => Config -> Int -> m ()
+setSession :: Config -> Int -> IO ()
 setSession Config{..} clientId = atomically $ do
   ids <- readTVar clients
   unless (clientId `elem` ids) $ modifyTVar' clients (clientId :)
@@ -156,7 +158,7 @@ main = do
         , fkspPath = "./test-key-set"
         }
   cfg <- Config
-    <$> STM.newTVarIO initModel
+    <$> STM.newTVarIO newModel
     <*> atomically newBroadcastTChan
     <*> pure "./static"
     <*> newTVarIO []

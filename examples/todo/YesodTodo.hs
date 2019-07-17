@@ -12,18 +12,19 @@
 module YesodTodo where
 
 import           Conduit
-import           Control.Concurrent.STM.Lifted as STM
+import           Control.Concurrent.STM    as STM
 import           Control.Monad.Reader
-import           Prelude                       hiding (interact)
-import           System.Random                 (randomRIO)
-import           Text.Blaze.Front.Renderer     (renderNewMarkup)
+import           Prelude                   hiding (interact)
+import           System.Random             (randomRIO)
+import           Text.Blaze.Front.Renderer (renderNewMarkup)
 import           Yesod.Core
 import           Yesod.Static
 import           Yesod.WebSockets
 
-import qualified Data.Text                     as T
+import qualified Data.Text                 as T
 
 import           Bridge
+import           Shared
 import           Todo
 import           Web.Front.Broadcast
 
@@ -58,7 +59,7 @@ instance Yesod App where
 getHomeR :: Handler Html
 getHomeR = do
   modelTVar <- appModel <$> getYesod
-  model <- STM.readTVarIO modelTVar
+  model <- liftIO $ STM.readTVarIO modelTVar
   webSockets $ webApp modelTVar
   defaultLayout $ do
     setTitle "TODO"
@@ -71,7 +72,7 @@ webApp tvar = do
   conn <- ask
   cid <- clientSession
   writeChan' <- appChannel <$> getYesod
-  readChan' <- atomically $ do
+  readChan' <- liftIO $ atomically $ do
     dupTChan writeChan'
   liftIO $ interact conn writeChan' readChan' tvar cid
 
@@ -93,7 +94,7 @@ clientSession = do
 main :: IO ()
 main = do
   (App
-    <$> STM.newTVarIO initModel
+    <$> STM.newTVarIO newModel
     <*> atomically newBroadcastTChan
     <*> staticDevel "./static")
   >>= warp 3000
