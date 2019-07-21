@@ -72,6 +72,15 @@ export HASKELL_PACKAGE_SANDBOX=`echo .cabal-sandbox/*-packages.conf.d/`
   -o bundle.js fay/Client.hs
 ```
 
+or
+
+```
+~/.local/bin/fay \
+  --package fay-dom,fay-websockets \
+  --include shared,fay \
+  -o bundle.js fay/Client.hs
+```
+
 Please do not hesitate to open Issue to discuss your questions or use cases.
 
 ## Acknowledgement

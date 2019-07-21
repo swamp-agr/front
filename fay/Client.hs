@@ -13,19 +13,23 @@ import           DOM
 import           Prelude
 
 -- | Main function, used as entry point for client.
-main :: Fay ()
-main = do
+runWith :: (a -> Text -> a) -> Fay ()
+runWith ext = do
   url <- getWsUrl
-  ws <- websocket url onOpen (onMessage') no no
+  ws <- websocket url onOpen (onMessage' ext) no no
   -- FIXME: handle with 'onOpen' instead
   void $ setTimeout 1000 $ \_ -> sendAny ws AskEvents
+  return ()
   where
     no :: WSEvent -> Fay ()
     no = \_ -> return ()
 
 -- | WebSocket 'onMessage' event handler.
-onMessage' :: WSEvent -> Fay ()
-onMessage' evt = do
+onMessage'
+  :: (a -> Text -> a) -- ^ Helper function, which used to handle outer effects.
+  -> WSEvent -- ^ WebSocket event.
+  -> Fay ()
+onMessage' transform0 evt = do
   ws <- target evt
   responseText <- eventData evt
   response <- parse responseText
@@ -38,38 +42,67 @@ onMessage' evt = do
             case html of
               AttachText eid val -> attachToElemById eid val
               AttachDOM eid val  -> attachToParentById eid val
-          forM_ (executeAction task) $ \act -> addListener ws act
+          forM_ (executeAction task) $ \act -> addListener transform0 ws act
         else return ()
 
 -- | Connect WebSocket with corresponding event handler.
-addListener :: WebSocket -> CallbackAction (Action a) -> Fay ()
-addListener ws (CallbackAction eh) = handle ws eh
+addListener
+  :: (a -> Text -> a) -- ^ Helper function, which used to handle outer effects.
+  -> WebSocket -- ^ Connection.
+  -> CallbackAction (Action a) -- ^ Callback.
+  -> Fay ()
+addListener transform1 ws (CallbackAction eh) = handle transform1 ws eh
 
 -- | Event handler for incoming action.
 -- FIXME: add more events.
-handle :: WebSocket -> EventHandler (Action a) -> Fay ()
-handle ws eh = case eh of
-  OnClick act1       -> handleAction ws act1 onClick
-  OnKeyUp act2       -> handleAction ws act2 onKeyUp
-  OnValueChange act3 -> handleAction ws act3 onChange
-  _                  -> log' "not implemented yet"
+handle
+  :: (a -> Text -> a) -- ^ Helper function, which used to handle outer effects.
+  -> WebSocket -- ^ Connection.
+  -> EventHandler (Action a) -- ^ Event Handler is here.
+  -> Fay ()
+handle transform2 ws eh = case eh of
+  OnClick act1       -> handleAction transform2 ws act1 onClick
+  OnKeyUp act2       -> handleAction transform2 ws act2 onKeyUp
+  OnValueChange act3 -> handleAction transform2 ws act3 onChange
+  OnKeyDown act4     -> handleAction transform2 ws act4 onKeyDown
+  OnKeyPress act5    -> handleAction transform2 ws act5 onKeyPress
+  OnEnter act6       -> handleAction transform2 ws act6 onEnter
+  OnBlur act7        -> handleAction transform2 ws act7 onBlur
+  OnDoubleClick act8 -> handleAction transform2 ws act8 onDoubleClick
+  _x                 -> do
+    log' "not implemented yet: "
+    log' _x
 
 -- | Default behaviour how to handle incoming commands from server.
 -- Based on 'ActionType' corresponding flow chosen.
 -- If incoming command has 'ObjectAction' type, then there is expectation to create/delete/make some specific action. Otherwise, some records of data type should be updated/populated, or child element should be changed.
 handleAction
-  :: WebSocket -- ^ connection to server
+  :: (a -> Text -> a) -- ^ update function.
+  -> WebSocket -- ^ connection to server
   -> Action a -- ^ wrapped message with instructions how to handle it
-  -> (Element -> Fay () -> Fay ()) -- ^ event handler
+  -> (Element -> (a -> Fay ()) -> Fay ()) -- ^ event handler
   -> Fay ()
-handleAction ws (Action e a c) fun = do
+handleAction transform3 ws (Action e a c) fun = do
   elem <- getElementById e
   let f = fun
-  f elem $ do
+  f elem $ \evt -> do
     case a of
+      EnterAction -> do
+        code <- keyCode evt
+        log' code
+        case code of
+          13 -> do
+            log' "we are here"
+            sendAny ws (Send (Action e EnterAction c))
+          _ -> return ()
+
       RecordAction -> do
-        val <- getValue elem
-        sendAny ws (Send (Action e RecordAction val))
+        val <- value elem
+        log' val
+        let newVal = pushValue transform3 c val
+        log' newVal
+        sendAny ws (Send (Action e RecordAction newVal))
+
       ObjectAction -> do
         sendAny ws (Send (Action e ObjectAction c))
 
@@ -78,3 +111,11 @@ sendAny :: WebSocket -> a -> Fay ()
 sendAny ws val = do
   js <- json val
   sendWS ws js
+
+pushValue
+  :: (a -> Text -> a) -- ^ helper function, how to update value assigned to data.
+  -> a -- ^ instance of data type.
+  -> Text -- ^ value.
+  -> a -- ^ result.
+pushValue g initValue1 newValue =
+  let exec = g in exec initValue1 newValue
