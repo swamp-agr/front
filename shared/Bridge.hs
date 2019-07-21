@@ -17,6 +17,7 @@ data EventHandler a
     = OnKeyDown   !a
     | OnKeyUp     !a
     | OnKeyPress  !a
+    | OnEnter     !a
     | OnFocus !a
     | OnBlur  !a
     | OnValueChange    !a
@@ -108,7 +109,7 @@ actionCmd (Action _ _ c) = c
 updateAction :: Action a -> a -> Action a
 updateAction (Action e a _) c = Action e a c-}
 
-data ActionType = RecordAction | ObjectAction
+data ActionType = RecordAction | ObjectAction | EnterAction
 #ifdef FAY
   deriving (Typeable, Data)
 #else

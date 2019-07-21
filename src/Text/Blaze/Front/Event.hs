@@ -6,42 +6,44 @@ module Text.Blaze.Front.Event
 
       -- ** Keyboard events
     , onKeyDown
-    , onKeyUp  
+    , onKeyUp
     , onKeyPress
+    , onEnter
 
       -- ** Focus events
-    , onFocus   
-    , onBlur    
+    , onFocus
+    , onBlur
 
       -- ** Form events
     , onValueChange
     , onCheckedChange
     , onSelectedChange
-    , onSubmit        
+    , onSubmit
 
       -- ** Mouse events
-    , onClick         
-    , onDoubleClick   
-    , onMouseDown     
-    , onMouseUp       
-    , onMouseMove     
-    , onMouseEnter    
-    , onMouseLeave    
-    , onMouseOver     
-    , onMouseOut      
+    , onClick
+    , onDoubleClick
+    , onMouseDown
+    , onMouseUp
+    , onMouseMove
+    , onMouseEnter
+    , onMouseLeave
+    , onMouseOver
+    , onMouseOut
 
       -- ** UI Events
-    , onScroll        
+    , onScroll
 
       -- ** Wheel Events
-    , onWheel         
+    , onWheel
 
     ) where
 
-import Text.Blaze.Front.Internal       (MarkupM(..), Attribute(..), Markup)
-import Prelude
+import           Prelude
+import           Text.Blaze.Front.Internal (Attribute (..), Markup,
+                                            MarkupM (..))
 
-import Bridge
+import           Bridge
 
 -- | Modify all event handlers attached to a 'Markup' tree so that the given
 -- function is applied to the return values of their callbacks.
@@ -53,15 +55,19 @@ mapActions = MapActions
 
 -- | The user has pressed a physical key while the target element was focused.
 onKeyDown :: act -> Attribute act
-onKeyDown = onEvent . OnKeyDown 
+onKeyDown = onEvent . OnKeyDown
 
 -- | The user has released a phyiscal key while the target element was focused.
 onKeyUp :: act -> Attribute act
 onKeyUp = onEvent . OnKeyUp
 
--- | The user has input some ASCII character while the target element was
+-- | The user has input some ASCII character while the target element was focused.
 onKeyPress :: act -> Attribute act
 onKeyPress = onEvent . OnKeyPress
+
+-- | The user has pressed <Enter> while the target element was focused.
+onEnter :: act -> Attribute act
+onEnter = onEvent . OnEnter
 
 -- Focus events
 -------------------------------------------------------------------------------

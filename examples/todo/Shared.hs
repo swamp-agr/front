@@ -21,7 +21,7 @@ data Visibility = All | Active | Completed
 #ifdef FAY
   deriving (Typeable, Data)
 #else
-  deriving (Show, Typeable, Data)
+  deriving (Show, Typeable, Data, Eq)
 #endif
 
 data Msg = Msg1 MsgCommon | Msg2 MsgEntry
@@ -33,7 +33,6 @@ data Msg = Msg1 MsgCommon | Msg2 MsgEntry
 
 data MsgCommon
   = Add
-  | UpdateEntry EntryId Text
   | UpdateField Text
   | CheckAll Bool
   | DeleteComplete
@@ -46,11 +45,9 @@ data MsgCommon
 
 
 data MsgEntry
-  = Focus EntryId
-  -- \| Edit EntryId Text
-  | Cancel EntryId
-  | Commit EntryId
-  | Complete EntryId Bool
+  = Editing EntryId Bool
+  | UpdateEntry EntryId Text
+  | Check EntryId Bool
   | Delete EntryId
 #ifdef FAY
   deriving (Typeable, Data)
@@ -60,9 +57,34 @@ data MsgEntry
 
 
 #ifdef FAY
+-- | Boilerplate that teaches client how to assign value into the message.
 update :: Msg -> Text -> Msg
 -- FIXME: update (Update ix _oldval) newval = Update ix newval
-update x _                        = x
+update (Msg1 msgCommon) x = Msg1 (updateMsgCommon msgCommon x)
+update (Msg2 msgEntry)  x = Msg2 (updateMsgEntry msgEntry x)
+
+updateMsgCommon :: MsgCommon -> Text -> MsgCommon
+updateMsgCommon Add _ = Add
+updateMsgCommon (UpdateField _) val2     = UpdateField val2
+updateMsgCommon (CheckAll _) val3 = case val3 of
+  "checked" -> CheckAll True
+  _         -> CheckAll False
+updateMsgCommon DeleteComplete _ = DeleteComplete
+updateMsgCommon (ChangeVisibility old) val4 = case val4 of
+  "All"       -> ChangeVisibility All
+  "Active"    -> ChangeVisibility Active
+  "Completed" -> ChangeVisibility Completed
+  _           -> ChangeVisibility old
+
+updateMsgEntry :: MsgEntry -> Text -> MsgEntry
+updateMsgEntry (Editing eid _old) val1 = case val1 of
+  "" -> Editing eid False
+  _  -> Editing eid True
+updateMsgEntry (UpdateEntry eid _) val2 = UpdateEntry eid val2
+updateMsgEntry (Check eid _) val3 = case val3 of
+  "" -> Check eid False
+  _  -> Check eid True
+updateMsgEntry (Delete eid) _ = Delete eid
 
 main = runWith update
 #endif

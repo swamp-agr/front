@@ -19,6 +19,7 @@ runWith ext = do
   ws <- websocket url onOpen (onMessage' ext) no no
   -- FIXME: handle with 'onOpen' instead
   void $ setTimeout 1000 $ \_ -> sendAny ws AskEvents
+  return ()
   where
     no :: WSEvent -> Fay ()
     no = \_ -> return ()
@@ -64,6 +65,10 @@ handle transform2 ws eh = case eh of
   OnKeyUp act2       -> handleAction transform2 ws act2 onKeyUp
   OnValueChange act3 -> handleAction transform2 ws act3 onChange
   OnKeyDown act4     -> handleAction transform2 ws act4 onKeyDown
+  OnKeyPress act5    -> handleAction transform2 ws act5 onKeyPress
+  OnEnter act6       -> handleAction transform2 ws act6 onEnter
+  OnBlur act7        -> handleAction transform2 ws act7 onBlur
+  OnDoubleClick act8 -> handleAction transform2 ws act8 onDoubleClick
   _x                 -> do
     log' "not implemented yet: "
     log' _x
@@ -75,17 +80,29 @@ handleAction
   :: (a -> Text -> a) -- ^ update function.
   -> WebSocket -- ^ connection to server
   -> Action a -- ^ wrapped message with instructions how to handle it
-  -> (Element -> Fay () -> Fay ()) -- ^ event handler
+  -> (Element -> (a -> Fay ()) -> Fay ()) -- ^ event handler
   -> Fay ()
 handleAction transform3 ws (Action e a c) fun = do
   elem <- getElementById e
   let f = fun
-  f elem $ do
+  f elem $ \evt -> do
     case a of
+      EnterAction -> do
+        code <- keyCode evt
+        log' code
+        case code of
+          13 -> do
+            log' "we are here"
+            sendAny ws (Send (Action e EnterAction c))
+          _ -> return ()
+
       RecordAction -> do
-        val <- getValue elem
+        val <- value elem
+        log' val
         let newVal = pushValue transform3 c val
+        log' newVal
         sendAny ws (Send (Action e RecordAction newVal))
+
       ObjectAction -> do
         sendAny ws (Send (Action e ObjectAction c))
 
