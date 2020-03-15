@@ -40,12 +40,12 @@ library
                      , async
                      , stm
                      , conduit
-                     , text >=1.2 && <1.3
+                     , text >=1.2 
                      , mtl
-                     , bytestring >=0.10 && <0.11
-                     , blaze-markup >=0.8 && <0.10
-                     , blaze-html >=0.9 && <0.10
-                     , fay >= 0.24.0.2
+                     , bytestring >=0.10 
+                     , blaze-markup >=0.8
+                     , blaze-html >=0.9 
+                     , fay >= 0.24.0.5
                      , fay-dom
                      , fay-websockets
                      , websockets
