@@ -3,6 +3,7 @@
 ## 0.0.0.4 -- 2020-03-15
 
 * Support GHC 8.6.5, switch to LTS-14.
+* Change `CommandHandler` typeclass to higher-order function.
 
 ## 0.0.0.3 -- 2020-02-04
 
