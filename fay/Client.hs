@@ -33,25 +33,28 @@ onMessage' transform0 evt = do
   ws <- target evt
   responseText <- eventData evt
   response <- parse responseText
-  case response of
-    EmptyCmd -> return ()
-    ExecuteClient cid task strategy -> do
-      if strategy == ExecuteAll
-        then do
-          forM_ (executeRenderHtml task) $ \html ->
-            case html of
-              AttachText eid val -> attachToElemById eid val
-              AttachDOM eid val  -> attachToParentById eid val
-          forM_ (executeAction task) $ \act -> addListener transform0 ws act
-        else return ()
+  handleResponse ws transform0 response
+
+handleResponse :: WebSocket -> (a -> Text -> a) -> Out (Action a) -> Fay ()
+handleResponse _ws _helper EmptyCmd = return ()
+handleResponse ws helper (ExecuteClient cid task strategy) = do
+  if strategy == ExecuteAll
+    then do
+      forM_ (executeRenderHtml task) $ handleRenderHtml
+      forM_ (executeAction task) $ \callback -> addListener ws helper callback
+    else return ()
+
+handleRenderHtml :: RenderHtml -> Fay ()
+handleRenderHtml (AttachText eid1 val1) = attachToElemById eid1 val1
+handleRenderHtml (AttachDOM eid2 val2)  = attachToParentById eid2 val2
 
 -- | Connect WebSocket with corresponding event handler.
 addListener
-  :: (a -> Text -> a) -- ^ Helper function, which used to handle outer effects.
-  -> WebSocket -- ^ Connection.
+  :: WebSocket -- ^ Connection.
+  -> (a -> Text -> a) -- ^ Helper function, which used to handle outer effects.
   -> CallbackAction (Action a) -- ^ Callback.
   -> Fay ()
-addListener transform1 ws (CallbackAction eh) = handle transform1 ws eh
+addListener ws transform1 (CallbackAction eh) = handle transform1 ws eh
 
 -- | Event handler for incoming action.
 -- FIXME: add more events.
@@ -98,9 +101,7 @@ handleAction transform3 ws (Action e a c) fun = do
 
       RecordAction -> do
         val <- value elem
-        log' val
         let newVal = pushValue transform3 c val
-        log' newVal
         sendAny ws (Send (Action e RecordAction newVal))
 
       ObjectAction -> do
