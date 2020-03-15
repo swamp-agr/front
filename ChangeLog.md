@@ -1,6 +1,10 @@
 # Revision history for front
 
-## 0.0.0.3 -- 2019-07-21
+## 0.0.0.4 -- 2020-03-15
+
+* Support GHC 8.6.5, switch to LTS-14.
+
+## 0.0.0.3 -- 2020-02-04
 
 * `Todo` example reworked to be complaint with http://todomvc.com.
 * `onBlur`, `onDoubleClick`, `onEnter` event handlers added.

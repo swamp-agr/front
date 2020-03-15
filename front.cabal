@@ -2,7 +2,7 @@
 --  see http://haskell.org/cabal/users-guide/
 
 name:                front
-version:             0.0.0.3
+version:             0.0.0.4
 synopsis:            A reactive frontend web framework
 description:         A reactive frontend web framework. See haskell-front.org for more details.
 homepage:            haskell-front.org

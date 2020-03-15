@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
 module Web.Front.Broadcast where
 
 import           Bridge
@@ -20,14 +20,15 @@ import           Network.WebSockets       hiding (Headers)
 -- First one is responsible for reading data from stream, decoding JSON message, executing custom business logic implemented by user and pushing the produced outgoing 'message' to 'TChan'.
 -- The second process is constantly reading from 'TChan', encoding the given message and pushing it to all subscribers.
 interact
-  :: (CommandHandler cache model message, Data message, Data message2)
-  => Connection
+  :: (Data message, Data message2)
+  => (Value -> cache model -> ClientId -> IO (Out (Action message)))
+  -> Connection
   -> TChan (Out (Action message))
   -> TChan (Out message2)
   -> cache model
   -> ClientId
   -> IO ()
-interact stream in' out' tvar client = do
+interact onCommand stream in' out' tvar client = do
   race_
     (readLoop stream in' tvar client)
     (writeLoop stream out' client)
@@ -53,10 +54,6 @@ interact stream in' out' tvar client = do
                 ExecuteClient cid task ExecuteAll
               sendTextData _stream (toLazyText $ encodeToTextBuilder json2)
 
-    readLoop
-      :: (CommandHandler cache model message, Data message)
-      => Connection -> TChan (Out (Action message))
-      -> cache model -> ClientId -> IO ()
     readLoop _stream _in _tvar _client = forever $ liftIO $ do
       data' <- receiveData _stream
       runConduit $ yield data' .| mapM_C (\cmdstr -> do
@@ -66,9 +63,3 @@ interact stream in' out' tvar client = do
             liftIO $ putStrLn $ show cmd
             res <- onCommand cmd _tvar _client
             atomically $ writeTChan _in res)
-
--- | 'CommandHandler' class contains all business logic, i.e. how to change the given state ('cache model'), synchronize state for all online sessions and produce outgoing message with the 'Action'. 'Action' contains 'ClientId' to separate different sessions, 'ExecuteStrategy' to tell the 'Client' how to handle incoming message.
-class Data cmd => CommandHandler cache model cmd where
-  onCommand
-    :: Value -> cache model -> ClientId -> IO (Out (Action cmd))
-

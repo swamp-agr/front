@@ -1,12 +1,11 @@
 allow-newer: true
-resolver: lts-13.28
+resolver: lts-14.22
 packages:
 - '.'
 
 extra-deps:
-- fay-0.24.0.3
+- fay-0.24.0.5
 - fay-websockets-0.0.1.1
-- servant-auth-cookie-0.6.0.3
-- stm-lifted-2.5.0.0
+- servant-auth-cookie-0.6.0.3@5aa579b8456f594ad26760e84d6c12a10792e6e7
 - fay-base-0.21.1.1
 - fay-dom-0.5.0.1
