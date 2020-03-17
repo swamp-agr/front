@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 
@@ -7,22 +7,22 @@
 --
 module Text.Blaze.Front.Renderer where
 
-import qualified Data.ByteString.Char8 as SBC
-import           Data.List             (isInfixOf)
-import           Data.Text             (Text)
-import qualified Data.Text             as T
-import qualified Data.ByteString       as S
-import           Data.Text.Lazy.Builder (Builder)
-import qualified Data.Text.Lazy.Builder as TLB
-import qualified Data.Text.Lazy         as TL
+import qualified Data.ByteString           as S
+import qualified Data.ByteString.Char8     as SBC
+import           Data.List                 (isInfixOf)
+import           Data.Text                 (Text)
+import qualified Data.Text                 as T
+import qualified Data.Text.Lazy            as TL
+import           Data.Text.Lazy.Builder    (Builder)
+import qualified Data.Text.Lazy.Builder    as TLB
 
-import           Prelude               hiding (span)
+import           Prelude                   hiding (span)
 
 import           Text.Blaze.Front
 import           Text.Blaze.Front.Internal
 
 -- import qualified Text.Blaze as B
-import qualified Text.Blaze.Html as B
+import qualified Text.Blaze.Html           as B
 
 import           Bridge
 
@@ -79,62 +79,58 @@ render
     => Markup act
     -> Builder
     -> Builder
-render = go 0 id
+render = go id
   where
-    go :: forall act' b. Int
-      -> (Builder -> Builder)
+    go :: (Builder -> Builder)
       -> MarkupM act' b
       -> Builder -> Builder
-    go i attrs (Parent _ open close content) =
-        ind i
+    go attrs (Parent _ open close content) =
+        id
         . (((TLB.fromText . getText) open) `mappend`)
-        . attrs . ((TLB.fromText ">\n") `mappend`)
-        . go (inc i) id content . ind i
+        . attrs . ((TLB.fromText ">") `mappend`)
+        . go id content
         . (((TLB.fromText . getText) close) `mappend`)
-        .  ((TLB.singleton '\n') `mappend`)
-    go i attrs (CustomParent tag content) =
-        ind i
+    go attrs (CustomParent tag content) =
+        id
         . ((TLB.singleton '<') `mappend`)
         . fromChoiceString tag . (attrs)
-        . ((TLB.fromText ">\n") `mappend`)
-        . go (inc i) id content . ind i
+        . ((TLB.fromText ">") `mappend`)
+        . go id content
         . ((TLB.fromText "</") `mappend`)
         . fromChoiceString tag
-        . ((TLB.fromText ">\n") `mappend`)
-    go i attrs (Leaf _ begin end) =
-        ind i
+        . ((TLB.fromText ">") `mappend`)
+    go attrs (Leaf _ begin end) =
+        id
         . (((TLB.fromText . getText) begin) `mappend`)
         . (attrs)
         . (((TLB.fromText . getText) end) `mappend`)
-        . ((TLB.singleton '\n') `mappend`)
-    go i attrs (CustomLeaf tag close) =
-        ind i
+    go attrs (CustomLeaf tag close) =
+        id
         . ((TLB.singleton '<') `mappend`)
         . fromChoiceString tag . attrs
-        . ((TLB.fromText (if close then " />\n" else ">\n")) `mappend`)
-    go i attrs (AddAttribute _ key value h) = flip (go i) h $
+        . ((TLB.fromText (if close then " />" else ">")) `mappend`)
+    go attrs (AddAttribute _ key value h) = flip go h $
         (((TLB.fromText . getText) key) `mappend`)
         . fromChoiceString value
         . ((TLB.singleton '"') `mappend`) . attrs
-    go i attrs (AddCustomAttribute key value h) = flip (go i) h $
+    go attrs (AddCustomAttribute key value h) = flip go h $
         ((TLB.singleton ' ') `mappend`)
         . fromChoiceString key
         . ((TLB.fromText "=\"") `mappend`)
         . fromChoiceString value
         . ((TLB.singleton '"') `mappend`) .  attrs
-    go i _ (Content content) = ind i . fromChoiceString content
-        . ((TLB.singleton '\n') `mappend`)
-    go i attrs (Append h1 h2) = go i attrs h1 . go i attrs h2
-    go _ _ (Empty) = id
-    go _ _ (MapActions _ _) = id
-    go i attrs (OnEvent _ h) = go i attrs h  -- will be registered later through registerEvent
+    go _ (Content content) = fromChoiceString content
+    go attrs (Append h1 h2) = go attrs h1 . go attrs h2
+    go _ (Empty) = id
+    go _ (MapActions _ _) = id
+    go attrs (OnEvent _ h) = go attrs h  -- will be registered later through registerEvent
     {-# NOINLINE go #-}
 
     -- Increase the indentation
-    inc = (+) 4
+    -- inc = (+) 4
 
     -- Produce appending indentation
-    ind i = ((TLB.fromString (replicate i ' ')) `mappend`)
+    -- ind i = ((TLB.fromString (replicate i ' ')) `mappend`)
 {-# INLINE render #-}
 
 renderHtml
@@ -218,17 +214,17 @@ registerEvents
 registerEvents x = go x
   where
     go :: MarkupM a b -> [CallbackAction a] -> [CallbackAction a]
-    go (MapActions _ _) = id
-    go (Parent _ _ _ content) = go content
-    go (CustomParent _ content) = go content
-    go (Leaf _ _ _) = id
-    go (CustomLeaf _ _) = id
-    go (Content _) = id
-    go (Append a b) = (go a) . (go b)
-    go (AddAttribute _ _ _ a) = go a
+    go (MapActions _ _)           = id
+    go (Parent _ _ _ content)     = go content
+    go (CustomParent _ content)   = go content
+    go (Leaf _ _ _)               = id
+    go (CustomLeaf _ _)           = id
+    go (Content _)                = id
+    go (Append a b)               = (go a) . (go b)
+    go (AddAttribute _ _ _ a)     = go a
     go (AddCustomAttribute _ _ a) = go a
-    go Empty = id
-    go (OnEvent eh a) = ((reg eh) :) . (go a)
+    go Empty                      = id
+    go (OnEvent eh a)             = ((reg eh) :) . (go a)
 
     reg x' = CallbackAction x'
 
