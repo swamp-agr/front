@@ -1,5 +1,9 @@
 # Revision history for front
 
+## 0.0.0.5 -- 2020-03-17
+
+* Remove indentation from output html.
+
 ## 0.0.0.4 -- 2020-03-15
 
 * Support GHC 8.6.5, switch to LTS-14.
