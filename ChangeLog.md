@@ -1,5 +1,9 @@
 # Revision history for front
 
+## 0.0.0.6 -- 2020-03-25
+
+* Make client static and independent from server types.
+
 ## 0.0.0.5 -- 2020-03-17
 
 * Remove indentation from output html.

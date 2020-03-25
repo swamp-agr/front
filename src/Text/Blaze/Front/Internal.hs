@@ -1,8 +1,13 @@
 
-{-# LANGUAGE OverloadedStrings, GeneralizedNewtypeDeriving, Rank2Types,
-             FlexibleInstances, ExistentialQuantification,
-             DeriveDataTypeable, MultiParamTypeClasses, DeriveFunctor,
-             FunctionalDependencies #-}
+{-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE DeriveFunctor              #-}
+{-# LANGUAGE ExistentialQuantification  #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE FunctionalDependencies     #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE Rank2Types                 #-}
 -- | The BlazeMarkup core, consisting of functions that offer the power to
 -- generate custom markup elements. It also offers user-centric functions,
 -- which are exposed through 'Text.Blaze'.
@@ -68,26 +73,25 @@ module Text.Blaze.Front.Internal
 
 import           Control.Applicative
 
-import           Data.ByteString.Char8        (ByteString)
-import qualified Data.ByteString              as B
-import qualified Data.ByteString.Lazy         as BL
-import qualified Data.List                    as List
-import           Data.Monoid                  (Monoid, mempty)
-import           Data.Semigroup               (Semigroup, sconcat)
-import           Data.Text                    (Text)
-import qualified Data.Text                    as T
-import qualified Data.Text.Encoding           as T
-import qualified Data.Text.Lazy               as LT
-import           Data.Typeable                (Typeable)
+import qualified Data.ByteString       as B
+import           Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Lazy  as BL
+import qualified Data.List             as List
+import           Data.Semigroup        (sconcat)
+import           Data.Text             (Text)
+import qualified Data.Text             as T
+import qualified Data.Text.Encoding    as T
+import qualified Data.Text.Lazy        as LT
+import           Data.Typeable         (Typeable)
 
-import           GHC.Exts                     (IsString (..))
+import           GHC.Exts              (IsString (..))
 
-import           Prelude                      hiding (null)
+import           Prelude               hiding (null)
 
 import           Bridge
-import           Text.Blaze.Internal (StaticString(..), ChoiceString(..))
+import           Text.Blaze.Internal   (ChoiceString (..), StaticString (..))
 
-import           Unsafe.Coerce (unsafeCoerce)
+import           Unsafe.Coerce         (unsafeCoerce)
 
 
 -- | The core Markup datatype. The 'ev' type-parameter tracks the type of
@@ -426,15 +430,15 @@ instance Attributable (MarkupM ev a -> MarkupM ev b) ev where
 -- combinators.
 --
 external :: MarkupM ev a -> MarkupM ev a
-external (MapActions f x) = MapActions f (external x)
-external (OnEvent ev x) = OnEvent ev (external x)
-external (Content x) = Content $ External x
-external (Append x y) = Append (external x) (external y)
-external (Parent x y z i) = Parent x y z $ external i
-external (CustomParent x i) = CustomParent x $ external i
-external (AddAttribute x y z i) = AddAttribute x y z $ external i
+external (MapActions f x)           = MapActions f (external x)
+external (OnEvent ev x)             = OnEvent ev (external x)
+external (Content x)                = Content $ External x
+external (Append x y)               = Append (external x) (external y)
+external (Parent x y z i)           = Parent x y z $ external i
+external (CustomParent x i)         = CustomParent x $ external i
+external (AddAttribute x y z i)     = AddAttribute x y z $ external i
 external (AddCustomAttribute x y i) = AddCustomAttribute x y $ external i
-external x = x
+external x                          = x
 {-# INLINABLE external #-}
 
 -- | Take only the text content of an HTML tree.
