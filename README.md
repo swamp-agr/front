@@ -26,6 +26,7 @@ and include it as static resource in your application server.
 3. Import `Shared` module.
 4. Choose proper communication model (Only session, Broadcast, etc.).
 5. That's it.
+6. The only thing you need to keep in mind that one of records in your types should have name `commandValue`!
 
 ## Examples
 
@@ -35,6 +36,13 @@ and include it as static resource in your application server.
   ```
   stack install --flag="front:examples"
   ```
+  
+  or 
+  
+  ```
+  cabal v2-build --flags examples
+  ```
+  
   - usage:
   ```
   cd examples/todo
@@ -60,26 +68,8 @@ or
 stack build
 ```
 
-For client (issue: faylang/fay#459):
-
-```
-cabal sandbox init
-cabal install # fay executable and libraries will be loaded
-export HASKELL_PACKAGE_SANDBOX=`echo .cabal-sandbox/*-packages.conf.d/`
-.cabal-sandbox/bin/fay \
-  --package fay-dom,fay-websockets \
-  --include shared,fay \
-  -o bundle.js fay/Client.hs
-```
-
-or
-
-```
-~/.local/bin/fay \
-  --package fay-dom,fay-websockets \
-  --include shared,fay \
-  -o bundle.js fay/Client.hs
-```
+For client: there is nothing special you need on client side. 
+`bundle.js` already had everything included.
 
 Please do not hesitate to open Issue to discuss your questions or use cases.
 
