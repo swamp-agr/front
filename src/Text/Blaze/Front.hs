@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 -- | BlazeMarkup is a markup combinator library. It provides a way to embed
 -- markup languages like HTML and SVG in Haskell in an efficient and convenient
 -- way, with a light-weight syntax.
@@ -66,14 +67,14 @@ module Text.Blaze.Front
     , contents
     ) where
 
-import Data.Int (Int32, Int64)
-import Data.Word (Word, Word32, Word64)
+import           Data.Int                  (Int32, Int64)
+import           Data.Word                 (Word32, Word64)
 
-import Data.Text (Text)
-import qualified Data.Text.Lazy as LT
+import           Data.Text                 (Text)
+import qualified Data.Text.Lazy            as LT
 
-import Prelude
-import Text.Blaze.Front.Internal
+import           Prelude
+import           Text.Blaze.Front.Internal
 
 -- | Class allowing us to use a single function for Markup values
 --
