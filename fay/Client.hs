@@ -41,7 +41,7 @@ onMessage' {-transform0-} evt = do
 handleResponse :: WebSocket -> {-(a -> Text -> a) ->-} Out (Action a) -> Fay ()
 handleResponse _ws {-_helper-} EmptyCmd = return ()
 handleResponse ws {-helper-} (ExecuteClient cid task strategy) = do
-  if strategy == ExecuteAll
+  if strategy /= ExecuteExcept
     then do
       forM_ (executeRenderHtml task) $ handleRenderHtml
       forM_ (executeAction task) $ \callback -> addListener ws {-helper-} callback

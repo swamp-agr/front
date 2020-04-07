@@ -69,7 +69,7 @@ data Out a = EmptyCmd
   deriving (Data, Typeable)
 
 data ExecuteStrategy =
-  ExecuteAll | ExecuteExcept
+  ExecuteAll | ExecuteExcept | ExecuteOnly
   deriving (Data, Typeable, Eq)
 
 data ClientTask a = ClientTask
