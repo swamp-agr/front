@@ -1,5 +1,9 @@
 # Revision history for front
 
+## 0.0.0.7 -- 2020-04-07
+
+* Add new strategy for only client session.
+
 ## 0.0.0.6 -- 2020-03-25
 
 * Make client static and independent from server types.
