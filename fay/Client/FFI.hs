@@ -68,7 +68,7 @@ setProperty
   -> [Text]
   -> Text
   -> Fay Text
-setProperty = ffi "(function(ob, arr, newVal){var str = arr.join('.');var t = ob; var n = newVal.replace(/\"/g, '\\x22').replace(/'/g, '\\x27'); var cmd = 't.'+str+'=\"'+n+'\"'; eval(cmd); return JSON.stringify(t);})(%1, %2, %3)"
+setProperty = ffi "(function(ob, arr, newVal){var str = arr.join('.');var t = ob; var n = newVal.replace(/\"/g, '\\\\x22').replace(/'/g, '\\x27').replace(/\\n/, '\\\\x0A'); var cmd = 't.'+str+'=\"'+n+'\"'; eval(cmd); return JSON.stringify(t);})(%1, %2, %3)"
 
 lookupProperty'
   :: a -- ^ Object to lookup.
