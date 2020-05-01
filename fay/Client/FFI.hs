@@ -82,3 +82,6 @@ setProperty'
   -> Text -- ^ New value.
   -> a -- ^ Updated object.
 setProperty' = ffi "(function(t){(function setProperty(object1, property, newValue) {if (object1.hasOwnProperty(property)){object1[property] = newValue;} for (key in object1) {if (object1[key] instanceof Object) {setProperty(object1[key], property, newValue);}}})(t, %2, %3); return t;})(%1)"
+
+eval :: Text -> Fay a
+eval = ffi "eval(%1)"

@@ -45,6 +45,7 @@ handleResponse ws {-helper-} (ExecuteClient cid task strategy) = do
     then do
       forM_ (executeRenderHtml task) $ handleRenderHtml
       forM_ (executeAction task) $ \callback -> addListener ws {-helper-} callback
+      forM_ (executeScript task) $ eval
     else return ()
 
 handleRenderHtml :: RenderHtml -> Fay ()
@@ -104,11 +105,20 @@ handleAction {-transform3-} ws (Action e a c) fun = do
 
       RecordAction -> do
         val <- value elem
-        newC <- pushValue {-transform3-} c val
+        newC <- pushValue c val
         sendAny ws $! (Send (Action e RecordAction newC))
 
       ObjectAction -> do
         sendAny ws (Send (Action e ObjectAction c))
+
+      EvalAction -> do
+        mVal <- tryEval c
+        case mVal of
+          Nothing -> return ()
+          Just val -> do
+            textVal <- json val
+            newC <- pushValue c textVal
+            sendAny ws $! (Send (Action e EvalAction newC))
 
 -- | json wrapper around message.
 sendAny :: WebSocket -> a -> Fay ()
@@ -116,8 +126,26 @@ sendAny ws val = do
   js <- json val
   sendWS ws js
 
+-- | Try to identify whether data type contained 'commandEval' record.
+-- And if it exists select code from property and executed it.
+-- If obtained result is not undefined, then it will be returned.
+tryEval
+  :: a -- ^ instance of data type.
+  -> Fay (Maybe b) -- ^ result.
+tryEval init = do
+  way <- findProperty init "commandEval"
+  case way of
+    [] -> return Nothing
+    _  -> do
+      val <- lookupProperty init way
+      case val of
+        "" -> return Nothing
+        _  -> do
+          result <- eval val
+          return (Just result)
+
 pushValue
-  :: a -- ^ instance of data type. -- (a -> Text -> a) -- ^ helper function, how to update value assigned to data.
+  :: a -- ^ instance of data type.
   -> Text -- ^ value.
   -> Fay a -- ^ result.
 pushValue initValue1 newValue = do

@@ -75,6 +75,7 @@ data ExecuteStrategy =
 data ClientTask a = ClientTask
   { executeRenderHtml :: [RenderHtml]
   , executeAction     :: [CallbackAction a]
+  , executeScript     :: [Script]
   } deriving (Data, Typeable)
 
 data RenderHtml = AttachText ElementId HtmlText
@@ -109,7 +110,7 @@ actionCmd (Action _ _ c) = c
 updateAction :: Action a -> a -> Action a
 updateAction (Action e a _) c = Action e a c-}
 
-data ActionType = RecordAction | ObjectAction | EnterAction
+data ActionType = RecordAction | ObjectAction | EnterAction | EvalAction
 #ifdef FAY
   deriving (Typeable, Data)
 #else
@@ -129,6 +130,8 @@ type ClientId = Int
 type RowNumber = Int
 
 type RecordValue = Text
+
+type Script = Text
 
 -- | Pretty-printer for command expected from Client.
 ppIncomingCommand :: In a -> Text
