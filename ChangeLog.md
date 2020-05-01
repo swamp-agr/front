@@ -1,5 +1,10 @@
 # Revision history for front
 
+## 0.0.0.8 -- 2020-05-01
+
+* Added custom script invokation.
+* Added custom disconnect handling.
+
 ## 0.0.0.7 -- 2020-04-07
 
 * Add new strategy for only client session.

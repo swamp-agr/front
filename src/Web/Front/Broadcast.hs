@@ -1,11 +1,12 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Web.Front.Broadcast where
 
 import           Bridge
 import           Conduit
 import           Control.Concurrent.Async
-import           Control.Exception (catch)
 import           Control.Concurrent.STM   as STM
+import           Control.Exception        (catch)
 import           Control.Monad            (forever)
 import           Data.Aeson               (Value, decode, toJSON)
 import           Data.Aeson.Text
