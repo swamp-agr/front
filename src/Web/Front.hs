@@ -31,7 +31,8 @@ createTask eid taskType renderer state = task
         task = ClientTask
           { executeRenderHtml = html
           , executeAction = registerEvents events []
+          , executeScript = []
           }
 
 emptyTask :: ClientTask a
-emptyTask = ClientTask { executeRenderHtml = [], executeAction = [] }
+emptyTask = ClientTask { executeRenderHtml = [], executeAction = [], executeScript = [] }

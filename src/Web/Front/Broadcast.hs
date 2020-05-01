@@ -4,6 +4,7 @@ module Web.Front.Broadcast where
 import           Bridge
 import           Conduit
 import           Control.Concurrent.Async
+import           Control.Exception (catch)
 import           Control.Concurrent.STM   as STM
 import           Control.Monad            (forever)
 import           Data.Aeson               (Value, decode, toJSON)
@@ -26,9 +27,10 @@ interact
   -> TChan (Out (Action message))
   -> TChan (Out message2)
   -> cache model
+  -> (IO ())
   -> ClientId
   -> IO ()
-interact onCommand stream in' out' tvar client = do
+interact onCommand stream in' out' tvar onClose client = do
   race_
     (readLoop stream in' tvar client)
     (writeLoop stream out' client)
@@ -54,7 +56,7 @@ interact onCommand stream in' out' tvar client = do
                 ExecuteClient cid task ExecuteAll
               sendTextData _stream (toLazyText $ encodeToTextBuilder json2)
 
-    readLoop _stream _in _tvar _client = forever $ liftIO $ do
+    readLoop _stream _in _tvar _client = (forever $ liftIO $ do
       data' <- receiveData _stream
       runConduit $ yield data' .| mapM_C (\cmdstr -> do
         case (decode $ BL.fromChunks [encodeUtf8 cmdstr] :: Maybe Value) of
@@ -62,4 +64,4 @@ interact onCommand stream in' out' tvar client = do
           Just cmd -> do
             liftIO $ putStrLn $ show cmd
             res <- onCommand cmd _tvar _client
-            atomically $ writeTChan _in res)
+            atomically $ writeTChan _in res)) `catch` \(_ex :: ConnectionException) -> onClose
